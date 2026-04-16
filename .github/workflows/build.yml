@@ -1,6 +1,10 @@
 name: Android Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ "claude/beginner-friendly-explanations-Ga3eq" ]
+  pull_request:
+    branches: [ "claude/beginner-friendly-explanations-Ga3eq" ]
 
 jobs:
   build:
@@ -14,31 +18,43 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Decode Keystore
-      env:
-        KEYSTORE: ${{ secrets.KEYSTORE }}
-      run: echo $KEYSTORE | base64 --decode > ./app/ci.ks
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
 
-    - name: Decode Properties
+    - name: Build Release APK
       env:
-        PROPERTIES: ${{ secrets.PROPERTIES }}
-      run: echo $PROPERTIES | base64 --decode > local.properties
-
-    - name: Build with Gradle
-      env:
-        BUILD_TAG: ".ci"
         BUILD_NUMBER: ${{ github.run_number }}
-      run: ./gradlew build
+      run: ./gradlew assembleRelease
 
-    - name: Get current branch name
-      run: echo "BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_ENV
+    - name: Rename APK
+      run: |
+        find app/build/outputs/apk/release -name "*.apk" | head -1 | xargs -I{} cp {} app/build/outputs/apk/release/apkupdater-m3f-durcheins.apk
+
+    - name: Upload APK as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: apkupdater-m3f-durcheins
+        path: app/build/outputs/apk/release/apkupdater-m3f-durcheins.apk
+        retention-days: 30
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
-      if: github.ref == 'refs/heads/3.x'
+      if: github.ref == 'refs/heads/claude/beginner-friendly-explanations-Ga3eq'
       with:
-        tag_name: 0.0.${{ github.run_number }}-ci
-        name: CI-Release-${{ env.BRANCH }}-${{ github.run_number }}
-        files: ./app/build/outputs/apk/release/com.apkupdater.ci-release.apk
-        body: ${{ github.event.head_commit.message }}
-        prerelease: true
+        tag_name: build-${{ github.run_number }}
+        name: APK Updater M3F - Build ${{ github.run_number }}
+        files: app/build/outputs/apk/release/apkupdater-m3f-durcheins.apk
+        body: |
+          Automatisch gebauter Release von APK Updater (DurchEins Fork)
+
+          **Änderungen gegenüber Original:**
+          - Material 3 / Material You Design
+          - Nur APKMirror, GitHub und Google Play als Quellen
+          - Kein Android TV Support
+          - Kein Root-Install
+          - Alpha-Updates immer gefiltert
+          - Nur Deutsch und Englisch
+          - Package: com.durcheins.apkupdater
+
+          Commit: ${{ github.event.head_commit.message }}
+        prerelease: false
