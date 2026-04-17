@@ -6,7 +6,6 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.durcheins.apkupdater.di.mainModule
-import com.topjohnwu.superuser.Shell
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -18,8 +17,6 @@ class App : Application(), SingletonImageLoader.Factory, KoinComponent {
 
 	override fun onCreate() {
 		super.onCreate()
-
-		Shell.setDefaultBuilder(Shell.Builder.create().setTimeout(10))
 
 		startKoin {
 			androidLogger()
